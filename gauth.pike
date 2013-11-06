@@ -10,7 +10,6 @@ int main(int argc, array argv) {
 	int    f_url  = Getopt.find_option(argv, "u", "url");
 
 	string s_acc  = Getopt.find_option(argv, "a", "account", UNDEFINED, "My account");
-	string s_svc  = Getopt.find_option(argv, "s", "service", UNDEFINED, "My service");
 	string s_iss  = Getopt.find_option(argv, "i", "issuer", UNDEFINED, "My issuer");
 	string s_key  = Getopt.find_option(argv, "k", "key", UNDEFINED, "0123456789ABCDEF0123");
 
@@ -20,7 +19,6 @@ int main(int argc, array argv) {
 		werror("\n");
 
 		werror("-a|--account <name>    Specify account name (for --url, default: \"My account\").\n");
-		werror("-s|--service <name>    Specify service name (for --url, default: \"My service\").\n");
 		werror("-i|--issuer <name>     Specify issuer name (for --url, default: \"My issuer\").\n");
 		werror("-k|--key <hex>         Specify key in hex (default: 0123456789ABCDEF0123).\n");
 		return 0;
@@ -31,7 +29,7 @@ int main(int argc, array argv) {
 
 	if (f_url) {
 		// URL
-		write(gauth_totp_url(s_acc, s_svc, s_iss, s_key));
+		write(gauth_totp_url(s_acc, s_iss, s_key));
 		return 0;
 	}
 	else {
@@ -41,7 +39,7 @@ int main(int argc, array argv) {
 }
 
 //! Generate a TOTP URL
-string gauth_totp_url(string accountname, string|void service, string|void issuer, string key) {
+string gauth_totp_url(string accountname, string|void issuer, string key) {
 	if (sizeof(key) != 10) throw(({ "Invalid key length\n", backtrace() }));
 
 	// Base32-encoder for 10-byte strings only
@@ -64,13 +62,14 @@ string gauth_totp_url(string accountname, string|void service, string|void issue
 	// Build the URL
 	string r = "otpauth://totp/";
 
-	if (service && service != "") r += Protocols.HTTP.percent_encode(service) + "%3A";
+	if (issuer && issuer != "") r += Protocols.HTTP.percent_encode(issuer) + "%3A";
 
 	r += Protocols.HTTP.percent_encode(accountname) + "?secret=" + encode_key_base32(key);
 
-	if (issuer && issuer != "") r += "&issuer=" + Protocols.HTTP.percent_encode(issuer);
-
-	return r;
+	if (issuer && issuer != "") {
+		return r + "&issuer=" + Protocols.HTTP.percent_encode(issuer);
+	}
+	else return r;
 }
 
 //! Generate a time-based (TOTP) code
